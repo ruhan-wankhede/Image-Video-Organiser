@@ -1,12 +1,14 @@
 """
 Segregate images and videos based on date of capture from the metadata into folders of Year -> month --> file_name_dd_time
 """
+import os
 import pathlib
-import sys
-import logging
+import tkinter
+import ctypes
 import win32com.client
+from tkinter import filedialog
 
-# TODO: Add GUI for media folder selection
+ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
 
 def get_file_metadata(path: str, filename: str, metadata: list[str]) -> dict[str: str]:
@@ -43,20 +45,21 @@ def segregate(data: str, file: pathlib.Path, years: list=[], months: list=[]):
     file.rename(rf"{file.resolve().parent}\{year}\{month}\{file.stem}_{day}_{date[1][0]}{date[1][1]}{file.suffix}")
 
 
-def main(path, files):
+def main(path: pathlib.Path, files) -> None:
     for file in files:
-        if file.is_file() and str(file.parent) == path:
+        if file.is_file() and file.parent == path:
             meta = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
             data = get_file_metadata(str(file.parent), str(file.name), meta)["Date created"]
             segregate(data, file)
 
 
 if __name__ == '__main__':
-    try:
-        folder_path = sys.argv[1]
-    except IndexError as e:
-        logging.exception("Enter absolute filepath in quotes")
-        exit(1)
+    root = tkinter.Tk()
+    root.withdraw()
 
-    file_iter = pathlib.Path(folder_path).glob("**/*")
-    main(folder_path, file_iter)
+    folder_path = filedialog.askdirectory(title="Open folder containing your media", initialdir=os.getcwd(), mustexist=True)
+    abs_folder_path = pathlib.Path(folder_path).resolve()
+
+    file_iter = pathlib.Path(str(folder_path)).glob("**/*")
+
+    main(abs_folder_path, file_iter)
